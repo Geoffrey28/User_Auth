@@ -1,5 +1,5 @@
 <?php
-session_start();
+// session_start();
 ?>
 
 <header style="display: flex; justify-content: space-around">
@@ -14,7 +14,7 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
         <a href="login.php" class="btn btn-success">Login</a> 
     </div>
 <?php
-} else if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
+} elseif (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
 ?>
     <a href="logout.php" class="btn btn-danger">Sign Out of Your Account</a>
 <?php

@@ -1,10 +1,9 @@
 <?php
-// Include config file
 require_once "config.php";
  
 // Define variables and initialize with empty values
-$username = $password = $confirm_password = "";
-$username_err = $password_err = $confirm_password_err = "";
+$username = $mail = $password = $confirm_password = "";
+$username_err = $mail_err = $password_err = $confirm_password_err = "";
  
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -38,13 +37,39 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         // Close statement
         unset($stmt);
     }
+
+    // Validate mail
+    if(empty(trim($_POST["mail"]))){
+        $mail_err = "Please enter a mail.";
+    } else {
+        if (!filter_var($_POST['mail'], FILTER_VALIDATE_EMAIL)) {
+            $mail_err = "Please enter a valid mail.";
+        } else {
+            $sql = "SELECT id FROM users WHERE mail = :mail";
+
+            if($stmt = $pdo->prepare($sql)){
+                $stmt->bindParam(":mail", $param_mail, PDO::PARAM_STR);
+                $param_mail = trim($_POST["mail"]);
+                if($stmt->execute()){
+                    if($stmt->rowCount() == 1){
+                        $mail_err = "This mail is already taken.";
+                    } else{
+                        $mail = trim($_POST["mail"]);
+                    }
+                } else {
+                    echo "Oops! Something went wrong. Please try again later. <3";
+                }
+            }
+            unset($stmt);
+        }
+    }
     
     // Validate password
     if(empty(trim($_POST["password"]))){
         $password_err = "Please enter a password.";     
     } elseif(strlen(trim($_POST["password"])) < 6){
         $password_err = "Password must have at least 6 characters.";
-    } else{
+    } else {
         $password = trim($_POST["password"]);
     }
     
@@ -59,18 +84,20 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
     
     // Check input errors before inserting in database
-    if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){
+    if(empty($username_err) && empty($mail_err) && empty($password_err) && empty($confirm_password_err)){
         
         // Prepare an insert statement
-        $sql = "INSERT INTO users (username, password) VALUES (:username, :password)";
+        $sql = "INSERT INTO users (username, mail, password) VALUES (:username, :mail, :password)";
          
         if($stmt = $pdo->prepare($sql)){
             // Bind variables to the prepared statement as parameters
             $stmt->bindParam(":username", $param_username, PDO::PARAM_STR);
+            $stmt->bindParam(":mail", $param_mail, PDO::PARAM_STR);
             $stmt->bindParam(":password", $param_password, PDO::PARAM_STR);
             
             // Set parameters
             $param_username = $username;
+            $param_mail = $mail;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
             
             // Attempt to execute the prepared statement
@@ -110,7 +137,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <label>Username</label>
                 <input type="text" name="username" class="form-control" value="<?php echo $username; ?>">
                 <span class="help-block"><?php echo $username_err; ?></span>
-            </div>    
+            </div> 
+            <div class="form-group <?php echo (!empty($mail_err)) ? 'has-error' : ''; ?>">
+                <label>E-mail</label>
+                <input type="text" name="mail" class="form-control" value="<?php echo $mail; ?>">
+                <span class="help-block"><?php echo $mail_err; ?></span>
+            </div>   
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
                 <input type="password" name="password" class="form-control" value="<?php echo $password; ?>">
